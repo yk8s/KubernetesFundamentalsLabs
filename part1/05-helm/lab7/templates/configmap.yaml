@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cm-ternary-default-required
+data:
+##  key1: ternary  key2: default key3: required

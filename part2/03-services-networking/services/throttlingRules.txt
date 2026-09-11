@@ -1,0 +1,71 @@
+voila l'existnat
+
+	  acl cookie_found cook(JSESSIONID) -m found
+      http-request set-var(txn.admintenant) str({{RUN.serviceId}})
+      http-request set-var(txn.key) var(txn.source),concat(|,txn.admintenant)
+      http-request track-sc1 var(txn.key) table connected.local if cookie_found
+      http-request track-sc2 var(txn.key) table nonconnected.local if !cookie_found
+      http-request set-var(txn.srate) var(txn.key),table_http_req_rate(connected.aggr) if cookie_found
+      http-request set-var(txn.srate) var(txn.key),table_http_req_rate(nonconnected.aggr) if !cookie_found
+      http-request set-var(txn.connectedserviceddosattack) str(true)
+      http-request deny if { var(txn.key),table_http_req_rate(connected.aggr) gt {{$.ddosProtection.connectedThreshold || 20000}} }
+      http-request set-var(txn.connectedserviceddosattack) str(false)
+      http-request set-var(txn.nonconnectedserviceddosattack) str(true)
+      http-request deny if { var(txn.key),table_http_req_rate(nonconnected.aggr) gt {{$.ddosProtection.nonconnectedThreshold || 4000}} }
+      http-request set-var(txn.nonconnectedserviceddosattack) str(false)    
+	  
+
+je propose d'ajouter le DSL :
+
+.
+  - path: /path/1
+    threshold: 1000  # Default threshold of 1000 requests
+    code: 429  # 429 Default response code for too many requests
+  - path: /path/2
+    threshold: 500  
+    code: 429
+  - path: /path/3
+    threshold: 2000  
+    code: 429
+
+
+
+
+
+throttlingRules:
+  - path: /path/1
+    connected:
+      threshold: 2000  # 2000 Default Threshold for connected users
+      code: 429  	   # 429 default Response code
+	  level: 2         # Default 2,  2: Blocking, 1: Logging, 0: No Throttling (Deactivated) 
+    nonConnected:
+      threshold: 400   # 400 Default Threshold for non-connected users
+      code: 429  	   # 429 default Response code
+	  level: 2         # Default 2,  2: Blocking, 1: Logging, 0: No Throttling (Deactivated) 
+  - path: /path/2
+   ...
+    
+
+
+
+acl cookie_found cook(JSESSIONID) -m found
+http-request set-var(txn.admintenant) str({{RUN.serviceId}})
+http-request set-var(txn.key) var(txn.source),concat(|,txn.admintenant)
+
+## For /path/1 - Connected users
+http-request set-var(txn.path) str(/path/1)
+http-request track-sc1 var(txn.key) table path1_requests_connected if { path /path/1 } { cookie_found }
+http-request set-var(txn.path_rate) var(txn.key),table_http_req_rate(path1_requests_connected) if { path /path/1 } { cookie_found }
+http-request deny deny_status 429 if { var(txn.path_rate) gt 2000 } 
+
+## For /path/1 - Non-connected users
+http-request set-var(txn.path) str(/path/1)
+http-request track-sc2 var(txn.key) table path1_requests_nonconnected if { path /path/1 } !{ cookie_found }
+http-request set-var(txn.path_rate) var(txn.key),table_http_req_rate(path1_requests_nonconnected) if { path /path/1 } !{ cookie_found }
+http-request deny deny_status 429 if { var(txn.path_rate) gt 400 } 
+
+## For /path/2 same as /path/1 :)
+
+La seule limite pour moi réside dans la manière d'identifier un utilisateur connecté. 
+Jusqu'à présent, nous avons utilisé le JSESSIONID, mais je ne pense pas que cela couvre tous les cas d'utilisation
+

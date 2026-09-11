@@ -1,0 +1,22 @@
+## Kubernetes Advanced labs v1.5.0
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: container-limit-range-example2
+spec:
+spec:
+  limits:
+  - default:
+      memory: 64Mi
+      cpu: 500m
+    defaultRequest:
+      memory: 32Mi
+      cpu: 500m
+    min:
+      cpu: 500m
+      memory: 16Mi
+    max:
+      cpu: 1
+      memory: 64Mi
+    type: Container
+

@@ -1,0 +1,12 @@
+## Kubernetes Fundamentals labs v1.4.5
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: pvc-sc-example
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: mypvsc
+  resources:
+    requests:
+      storage: 1Gi

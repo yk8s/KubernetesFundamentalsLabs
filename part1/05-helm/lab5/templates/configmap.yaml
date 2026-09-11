@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cm-if-else
+data:
+##  if var1 == 0 then  key: "zero" else if var1 == 1 then key: "one" else key: "other"

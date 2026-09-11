@@ -1,0 +1,60 @@
+## Kubernetes Fundamentals labs v1.5.0 -- RBAC
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rbac
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: dev-service-account
+  namespace: rbac
+
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: dev-secret
+  annotations:
+    kubernetes.io/service-account.name: "dev-service-account"
+  namespace: rbac
+
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: dev-access-role
+  namespace: rbac
+rules:
+- apiGroups: ["apps"]
+  resources:
+  - statefulsets
+  verbs: ["*"]
+- apiGroups: [""]
+  resources:
+  - services
+  - configmaps
+  - secrets
+  - persistentvolumeclaims
+  - persistentvolumes
+  verbs: ["*"]
+- apiGroups: [""]
+  resources:
+  - resourcequotas
+  verbs: ["get", "list", "watch"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: dev-role-binding
+  namespace: rbac
+subjects:
+- kind: ServiceAccount
+  name: dev-service-account
+  namespace: rbac
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: dev-access-role
